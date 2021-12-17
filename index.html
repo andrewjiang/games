@@ -12,7 +12,7 @@
         var mouse = [];
         var mouseBrickPosition = [];
         var ball = {
-            position: [400, 400],
+            position: [100, 100],
             speed: [5, 6],
             color: 'red',
             radius: 10
@@ -37,6 +37,15 @@
             gap: 60,
         }
 
+        var colors = {
+            0: 'red',
+            1: 'orange',
+            2: 'yellow',
+            3: 'green',
+            4: 'blue',
+            5: 'purple'           
+        }
+
         function ballReset() {
             ball.position[0] = canvas.width / 2;
             ball.position[1] = canvas.height / 2;
@@ -45,7 +54,7 @@
         function brickReset() {
             for (var i = 0; i < brick.rows; i++) {
                 for (var j = 0; j < brick.columns; j++) {
-                    brick.grid[i][j] = [1, 'blue'];
+                    j >= 2 ? brick.grid[i][j] = [1, j-2] : brick.grid[i][j] = [1, 0];
                 }
             }
         }
@@ -72,8 +81,14 @@
             moveAll();
             drawAll();
         }
-        function moveAll(){
 
+        function moveAll(){
+            ballPaddleCollision();
+            ballBrickCollision();
+            ballMove();
+        }
+
+        function ballPaddleCollision(){
             var paddleEdges = {
                 left: paddle.position[0],
                 right: paddle.position[0] + paddle.width,
@@ -92,23 +107,6 @@
                 var ballDistanceFromPaddleCenter = ball.position[0] - centerOfPaddle;
                 ball.speed[0] = ballDistanceFromPaddleCenter * 0.35;
             }
-
-            ballCollision('green');
-
-            //Update Ball Position
-            ball.position = [
-                ball.position[0] + ball.speed[0], 
-                ball.position[1] + ball.speed[1]
-            ];
-            if(ball.position[0] > canvas.width || ball.position[0] < 0){
-                ball.speed[0] = -ball.speed[0];
-            }
-            if(ball.position[1] < 0){
-                ball.speed[1] = -ball.speed[1];
-            }
-            if(ball.position[1] > canvas.height){
-                ballReset();
-            }
         }
 
         function drawBricks(){
@@ -117,7 +115,7 @@
                     if(brick.grid[i][j][0] == 1){
                         var brickX = j * (brick.width + brick.gap);
                         var brickY = i * (brick.height + brick.gap);
-                        colorRect(brickX, brickY, brick.width, brick.height, brick.grid[i][j][1]);
+                        colorRect(brickX, brickY, brick.width, brick.height, colors[brick.grid[i][j][1]]);
                     }
                 }
             }
@@ -133,10 +131,31 @@
             drawMousePos();            
         }
 
-        function ballCollision(color){
+        function ballMove(){
+            //Update Ball Position
+            ball.position = [
+                ball.position[0] + ball.speed[0], 
+                ball.position[1] + ball.speed[1]
+            ];
+
+            //Check if ball is out of bounds
+            if(ball.position[0] > canvas.width || ball.position[0] < 0){
+                ball.speed[0] = -ball.speed[0];
+            }
+            if(ball.position[1] < 0){
+                ball.speed[1] = -ball.speed[1];
+            }
+            if(ball.position[1] > canvas.height){
+                ballReset();
+            }
+        }
+
+        function ballBrickCollision(){
             for (var i = 0; i < brick.rows; i++) {
                 for (var j = 0; j < brick.columns; j++) {
                     if(brick.grid[i][j][0] == 1){
+
+                        // Get edges of brick
                         var brickX = j * (brick.width + brick.gap);
                         var brickY = i * (brick.height + brick.gap);
                         var brickEdges = {
@@ -145,33 +164,36 @@
                             top: brickY,
                             bottom: brickY + brick.height
                         }
-                        if(ball.position[1]+ball.radius > brickEdges.top &&
-                            ball.position[1]-ball.radius < brickEdges.bottom &&
-                            ball.position[0] > brickEdges.left &&
-                            ball.position[0] < brickEdges.right ){
-                                if(brick.grid[i][j][1] == color){
+                        var ballEdges = {
+                            left: ball.position[0] - ball.radius,
+                            right: ball.position[0] + ball.radius,
+                            top: ball.position[1] - ball.radius,
+                            bottom: ball.position[1] + ball.radius
+                        }
+
+                        if(ballEdges.bottom >= brickEdges.top && // bottom of ball is below top of brick
+                            ballEdges.top <= brickEdges.bottom && // top of ball is above bottom of brick
+                            ballEdges.right >= brickEdges.left && // right of ball is to the right of left of brick
+                            ballEdges.left <= brickEdges.right // left of ball is to the left of right of brick
+                            ){
+                                if(brick.grid[i][j][1] == 0){
                                     brick.grid[i][j][0] = 0;    
                                 } else {
-                                    brick.grid[i][j][1] = color;
+                                    brick.grid[i][j][1] = brick.grid[i][j][1] - 1;
                                 }
-                                if(ball.position[1] == brickEdges.top ||
-                                    ball.position[1] == brickEdges.bottom){
-                                    ball.speed[0] = -ball.speed[0];
-                                } else {
+
+                                if(Math.min(Math.abs(ballEdges.bottom - brickEdges.top),Math.abs(ballEdges.top - brickEdges.bottom)) 
+                                    < Math.min(Math.abs(ballEdges.right - brickEdges.left),Math.abs(ballEdges.left - brickEdges.right))
+                                ){
                                     ball.speed[1] = -ball.speed[1];
                                 }
+                                else{
+                                    ball.speed[0] = -ball.speed[0];
+                                }
+                                
+                                
                         }
                     }
-                }
-            }
-        }
-
-        function hideBrickOnRedBallCollision(){
-            var ballBrickPosition = [Math.floor(ball.position[0] / (brick.width + brick.gap)), Math.floor(ball.position[1] / (brick.height + brick.gap))];
-            if(ballBrickPosition[0] >= 0 && ballBrickPosition[0] < brick.columns && ballBrickPosition[1] >= 0 && ballBrickPosition[1] < brick.rows){
-                if(brick.grid[ballBrickPosition[1]][ballBrickPosition[0]][0] == 1 && brick.grid[ballBrickPosition[1]][ballBrickPosition[0]][1] == 'red'){
-                    brick.grid[ballBrickPosition[1]][ballBrickPosition[0]][0] = 0;
-                    ball.speed[1] = -ball.speed[1];
                 }
             }
         }

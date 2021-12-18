@@ -5,7 +5,7 @@
         <meta content="utf-8" http-equiv="encoding">
     </head>
     <body>
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="gameCanvas" width="500" height="500"></canvas>
     </body>
     <script>
         var canvas, canvasContext;
@@ -18,9 +18,9 @@
             radius: 10
         }
         var brick = {
-            width: 100,
+            width: 80,
             height: 50,
-            columns: 8,
+            columns: 6,
             rows: 5,
             gap: 2,
             color: 'blue'
@@ -33,7 +33,7 @@
         var paddle = {
             width: 100,
             thickness: 10,
-            position: [400, 540],
+            position: [400, 460],
             gap: 60,
         }
 
@@ -54,7 +54,7 @@
         function brickReset() {
             for (var i = 0; i < brick.rows; i++) {
                 for (var j = 0; j < brick.columns; j++) {
-                    j >= 2 ? brick.grid[i][j] = [1, j-2] : brick.grid[i][j] = [1, 0];
+                    brick.grid[i][j] = [1, j]
                 }
             }
         }
